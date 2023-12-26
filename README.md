@@ -1,4 +1,4 @@
-# simple_api_wrapper_42
+# simple_42_api_sender
 
 ## Before use
 
@@ -9,7 +9,7 @@ FT_API_UID=
 FT_API_SECRET=
 ```
 
-- Install jq.
+- Install jq
 
 ## Usage
 
