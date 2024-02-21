@@ -1,9 +1,11 @@
 #!/bin/bash
 set -uex
 
+DEFAULT_DIR="results"
+
 send()
 {
-    curl  -H "Authorization: Bearer $ACCESS_TOKEN" "https://api.intra.42.fr/v2/$TARGET?page\[size\]=100&page\[number\]=$1" > "$DIR/$FILENAME""_""$1.json"
+    curl  -H "Authorization: Bearer $ACCESS_TOKEN" "https://api.intra.42.fr/v2/$TARGET?page\[size\]=100&page\[number\]=$1" > "$DEFAULT_DIR/$DIR/$FILENAME""_""$1.json"
     if [ $(wc -c < "$DIR/$FILENAME""_""$1.json") -gt 2 ]; then
         return 0
     else
@@ -33,8 +35,9 @@ _main()
 {
     init_vars "$@";
 
+    RETURN=0
     i=1
-    while [ $RETURN -ne 0 ]; do
+    while [ $RETURN -eq 0 ]; do
         send $i
         i=$((i+1))
         RETURN=$?
