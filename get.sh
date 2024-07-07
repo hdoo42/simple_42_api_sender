@@ -1,12 +1,20 @@
 #!/bin/bash
-set -uex
+set -exu
 
 DEFAULT_DIR="/Users/hdoo/works/42/project/api/results"
 
+parse_header() {
+   "$DEFAULT_DIR/$DIR/$FILENAME""_""$1.json"
+}
+
 send() {
-	curl -i -H "Authorization: Bearer $ACCESS_TOKEN" "https://api.intra.42.fr/v2/$TARGET?$FILTER&page\[size\]=100&page\[number\]=$1" > "$DEFAULT_DIR/$DIR/$FILENAME""_""$1.json"
-	if [ $(wc -c <"$DEFAULT_DIR/$DIR/$FILENAME""_""$1.json") -gt 2 ]; then
-		return 0
+	save_to="$DEFAULT_DIR/$DIR/$FILENAME""_""$1.json"
+
+	status_code=$(curl -o "$save_to" -w "%{http_code}" -H "Authorization: Bearer $ACCESS_TOKEN" "https://api.intra.42.fr/v2/$TARGET?$FILTER&page\[size\]=100&page\[number\]=$1")
+
+	if [[ $status_code == 2* ]] && (( "$(wc -c < "$save_to")" > 1000 )); then
+			npx prettier -w "$save_to" > /dev/null &
+			return 0
 	else
 		return 1
 	fi
@@ -27,7 +35,9 @@ init_vars() {
 			DIR="$OPTARG"
 			;;
 		f)
-			FILTER="&filter$OPTARG$FILTER"
+			IFS='=' read -r FIELD VALUE <<< "$OPTARG"
+
+			FILTER="&filter\[$FIELD\]=$VALUE$FILTER"
 			;;
 		\?) # Handle the case of an unknown option
 			echo "Usage: get.sh URL [-d destination_dir] [-f filter]"
@@ -45,19 +55,18 @@ init_vars() {
 	fi
 
 	ACCESS_TOKEN=$(jq -r '.["access_token"]' .token.json)
-	if [ -n "$DEFAULT_DIR/$DIR" ]; then
+	if [ ! -d "$DEFAULT_DIR/$DIR" ]; then
 		mkdir -p "$DEFAULT_DIR/$DIR"
 	fi
 	FILENAME=$(echo "$TARGET" | tr '/' '_')
-	RETURN=3
 }
 
 _main() {
 	init_vars "$@"
 
-	RETURN=1
+	RETURN=0
 	i=1
-	while [ $RETURN -ne 0 ]; do
+	while [ $RETURN -eq 0 ]; do
 		send $i
 		i=$((i + 1))
 		RETURN=$?

@@ -4,7 +4,11 @@ set -uex
 DEFAULT_DIR="results"
 
 post() {
-	curl -X POST -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json" "https://api.intra.42.fr/v2/$TARGET" -d "$BODY" >"$DEFAULT_DIR/$DIR/$FILENAME.json"
+	save_to="$DEFAULT_DIR/$DIR/$FILENAME.json"
+
+	status_code=$(curl -X POST -o "$save_to" -w "%{http_code}" -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json" "https://api.intra.42.fr/v2/$TARGET" -d "$BODY")
+
+	echo "$status_code"
 }
 
 init_vars() {
@@ -23,11 +27,11 @@ init_vars() {
 			DIR="$OPTARG"
 			;;
 		b)
-			if [! -e "$OPTARG"]; then
+			if [ ! -e "$OPTARG" ]; then
 				echo "Error: file does not exist: $OPTARG"
 				exit 1
 			fi
-			BODY="$(cat $OPTARG)"
+			BODY=$(cat "$OPTARG")
 			;;
 		\?) # Handle the case of an unknown option
 			echo "Usage: post.sh TARGET_URL [-d destination_dir] [-b FILE]"
@@ -53,7 +57,6 @@ init_vars() {
 		mkdir -p "results/$DIR"
 	fi
 	FILENAME=$(echo "$TARGET" | tr '/' '_')
-	RETURN=3
 }
 
 _main() {
